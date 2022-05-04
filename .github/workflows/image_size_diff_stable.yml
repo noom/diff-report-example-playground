@@ -1,6 +1,6 @@
 # Workflow for building and publishing data contracts in Python
 
-name: Docker Image Size diff latest
+name: Docker Image Size diff stable
 
 on: pull_request
 
@@ -19,17 +19,31 @@ jobs:
       - name: Inspect event payload
         run: cat ${{ github.event_path }}
 
-      - name: Checkout base
+      - name: Checkout base, step 1
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.base_ref }}
+          # For base, any 'ref' will work, since we will checkout the merge-base
+          # manually.
+          fetch-depth: 0
           path: base/
+
+      - name: Checkout base, step 2
+        working-directory: base/
+        run: |
+          # Note that using github.base_ref yields the following error:
+          # fatal: Not a valid object name master
+          # This is because the checkout action doesn't create local branches.
+          # Because of that, we take the commit hashes from event.pull_request. The
+          # base.sha might be out of date, but for merge-base this is not a problem.
+          BASE_COMMIT=${{ github.event.pull_request.base.sha }}
+          HEAD_COMMIT=${{ github.event.pull_request.head.sha }}
+          MERGE_BASE=$(git merge-base $BASE_COMMIT $HEAD_COMMIT)
+          git checkout $MERGE_BASE
 
       - name: Checkout head
         uses: actions/checkout@v3
         with:
-          # Note that this is a default 'ref', adding for readability.
-          ref: ${{ github.sha }}
+          ref: ${{ github.head_ref }}
           path: head/
 
       - name: Install deps
@@ -74,7 +88,7 @@ jobs:
           REL_INCREASE=$(( 100.0 * ABS_INCREASE / BASE_SIZE ))
 
           (
-            printf "Diff results between %s and %s (latest):\n\n" "${BASE_COMMIT}" "${HEAD_COMMIT}"
+            printf "Diff results between %s and %s (stable):\n\n" "${BASE_COMMIT}" "${HEAD_COMMIT}"
             printf "The image size before this change was: %.2e bytes.\n" "${BASE_SIZE}"
             printf "The image size with this change is: %.2e bytes.\n" "${HEAD_SIZE}"
             printf "Absolute change: %+.2e bytes.\n" "${ABS_INCREASE}"
@@ -95,5 +109,5 @@ jobs:
           check-only-first-line: true
           unique: true
           comment: |
-            <!-- diff-report-latest-gha-tag -->
+            <!-- diff-report-stable-gha-tag -->
             ${{ env.diff_report }}
