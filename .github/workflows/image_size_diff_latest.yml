@@ -13,6 +13,9 @@ jobs:
       id-token: write
       contents: write
     steps:
+
+      # --------------- Setup ---------------
+
       - name: Inspect event payload
         run: cat ${{ github.event_path }}
 
@@ -29,7 +32,7 @@ jobs:
           ref: ${{ github.sha }}
           path: head/
 
-      - name: Install prerequisited
+      - name: Install deps
         run: |
           # From https://github.com/wagoodman/dive#installation
           wget https://github.com/wagoodman/dive/releases/download/v0.9.2/dive_0.9.2_linux_amd64.deb
@@ -37,12 +40,36 @@ jobs:
           dive --version
           jq --version
 
+      # --------------- Transform ---------------
+
       - name: Transform base
+        env:
+          SIDE: base
         working-directory: base/
         run: |
-          echo base
+          docker build . --tag "${SIDE}"
+          dive "${SIDE}" --json analysis.json
+          jq '.image.sizeBytes' analysis.json > "result.txt"
         
       - name: Transform head
+        env:
+          SIDE: head
         working-directory: head/
         run: |
-          echo test
+          docker build . --tag "${SIDE}"
+          dive "${SIDE}" --json analysis.json
+          jq '.image.sizeBytes' analysis.json > "result.txt"
+
+      # --------------- Report ---------------
+
+      - name: Report
+        run: |
+          BASE_SIZE=$(cat base/result.txt)
+          HEAD_SIZE=$(cat head/result.txt)
+          ABS_INCREASE=$(( HEAD_SIZE - BASE_SIZE ))
+          REL_INCREASE=$(( 100.0 * ABS_INCREASE / BASE_SIZE ))
+
+          printf "The image size before this change was: %.2e bytes.\n" "${BASE_SIZE}"
+          printf "The image size with this change is: %.2e bytes.\n" "${HEAD_SIZE}"
+          printf "Absolute change: %+.2e bytes.\n" "${ABS_INCREASE}"
+          printf "Relative change: %+.0f%%.\n" "${REL_INCREASE}"
