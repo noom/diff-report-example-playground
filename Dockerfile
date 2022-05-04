@@ -6,4 +6,4 @@ RUN apk add --no-cache python2 g++ make
 
 
 
-# RUN apk add --no-cache xfce4
+RUN apk add --no-cache xfce4
