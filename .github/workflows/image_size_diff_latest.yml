@@ -49,6 +49,7 @@ jobs:
         run: |
           docker build -f Dockerfile $PWD --tag "${SIDE}"
           dive "${SIDE}" --json analysis.json
+          git rev-parse HEAD > "commit.txt"
           jq '.image.sizeBytes' analysis.json > "result.txt"
         
       - name: Transform head
@@ -58,18 +59,22 @@ jobs:
         run: |
           docker build -f Dockerfile . --tag "${SIDE}"
           dive "${SIDE}" --json analysis.json
+          git rev-parse HEAD > "commit.txt"
           jq '.image.sizeBytes' analysis.json > "result.txt"
 
       # --------------- Report ---------------
 
       - name: Report
         run: |
+          BASE_COMMIT=$(cat base/commit.txt)
+          HEAD_COMMIT=$(cat head/commit.txt)
           BASE_SIZE=$(cat base/result.txt)
           HEAD_SIZE=$(cat head/result.txt)
           ABS_INCREASE=$(( HEAD_SIZE - BASE_SIZE ))
           REL_INCREASE=$(( 100.0 * ABS_INCREASE / BASE_SIZE ))
 
           (
+            printf "Diff results between %s and %s:\n\n" "${BASE_COMMIT}" "${HEAD_COMMIT}"
             printf "The image size before this change was: %.2e bytes.\n" "${BASE_SIZE}"
             printf "The image size with this change is: %.2e bytes.\n" "${HEAD_SIZE}"
             printf "Absolute change: %+.2e bytes.\n" "${ABS_INCREASE}"
