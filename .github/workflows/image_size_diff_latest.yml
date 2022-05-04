@@ -1,0 +1,99 @@
+# Workflow for building and publishing data contracts in Python
+
+name: Docker Image Size diff
+
+on: pull_request
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      id-token: write
+      contents: write
+    steps:
+
+      # --------------- Setup ---------------
+
+      - name: Inspect event payload
+        run: cat ${{ github.event_path }}
+
+      - name: Checkout base
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.base_ref }}
+          path: base/
+
+      - name: Checkout head
+        uses: actions/checkout@v3
+        with:
+          # Note that this is a default 'ref', adding for readability.
+          ref: ${{ github.sha }}
+          path: head/
+
+      - name: Install deps
+        run: |
+          # From https://github.com/wagoodman/dive#installation
+          wget https://github.com/wagoodman/dive/releases/download/v0.9.2/dive_0.9.2_linux_amd64.deb
+          sudo apt install ./dive_0.9.2_linux_amd64.deb
+          dive --version
+          jq --version
+
+      # --------------- Transform ---------------
+
+      - name: Transform base
+        env:
+          SIDE: base
+        working-directory: base/
+        run: |
+          docker build -f Dockerfile $PWD --tag "${SIDE}"
+          dive "${SIDE}" --json analysis.json
+          git rev-parse HEAD > "commit.txt"
+          jq '.image.sizeBytes' analysis.json > "result.txt"
+        
+      - name: Transform head
+        env:
+          SIDE: head
+        working-directory: head/
+        run: |
+          docker build -f Dockerfile . --tag "${SIDE}"
+          dive "${SIDE}" --json analysis.json
+          git rev-parse HEAD > "commit.txt"
+          jq '.image.sizeBytes' analysis.json > "result.txt"
+
+      # --------------- Report ---------------
+
+      - name: Report
+        run: |
+          BASE_COMMIT=$(cat base/commit.txt)
+          HEAD_COMMIT=$(cat head/commit.txt)
+          BASE_SIZE=$(cat base/result.txt)
+          HEAD_SIZE=$(cat head/result.txt)
+          ABS_INCREASE=$(( HEAD_SIZE - BASE_SIZE ))
+          REL_INCREASE=$(( 100.0 * ABS_INCREASE / BASE_SIZE ))
+
+          (
+            printf "Diff results between %s and %s:\n\n" "${BASE_COMMIT}" "${HEAD_COMMIT}"
+            printf "The image size before this change was: %.2e bytes.\n" "${BASE_SIZE}"
+            printf "The image size with this change is: %.2e bytes.\n" "${HEAD_SIZE}"
+            printf "Absolute change: %+.2e bytes.\n" "${ABS_INCREASE}"
+            printf "Relative change: %+.0f%%.\n" "${REL_INCREASE}"
+          ) > output
+
+          # Even though this is slightly ugly, it's the only way to set multiline
+          # environment variables that can be used in the next step:
+          # https://trstringer.com/github-actions-multiline-strings/
+          echo 'diff_report<<EOF' >> $GITHUB_ENV
+          cat output >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - name: Notify PR with results
+        uses: KeisukeYamashita/create-comment@v1
+        if: env.diff_report != ''
+        with:
+          check-only-first-line: true
+          unique: true
+          comment: |
+            <!-- schema-diff-gha-tag -->
+            ${{ env.diff_report }}
