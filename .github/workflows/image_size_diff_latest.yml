@@ -50,6 +50,7 @@ jobs:
           pwd
           ls -l ..
           ls -l -d .
+          ls -l
           docker build -f Dockerfile $PWD --tag "${SIDE}"
           dive "${SIDE}" --json analysis.json
           jq '.image.sizeBytes' analysis.json > "result.txt"
