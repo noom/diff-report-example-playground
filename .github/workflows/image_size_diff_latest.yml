@@ -47,10 +47,6 @@ jobs:
           SIDE: base
         working-directory: base/
         run: |
-          pwd
-          ls -l ..
-          ls -l -d .
-          ls -l
           docker build -f Dockerfile $PWD --tag "${SIDE}"
           dive "${SIDE}" --json analysis.json
           jq '.image.sizeBytes' analysis.json > "result.txt"
@@ -73,7 +69,26 @@ jobs:
           ABS_INCREASE=$(( HEAD_SIZE - BASE_SIZE ))
           REL_INCREASE=$(( 100.0 * ABS_INCREASE / BASE_SIZE ))
 
-          printf "The image size before this change was: %.2e bytes.\n" "${BASE_SIZE}"
-          printf "The image size with this change is: %.2e bytes.\n" "${HEAD_SIZE}"
-          printf "Absolute change: %+.2e bytes.\n" "${ABS_INCREASE}"
-          printf "Relative change: %+.0f%%.\n" "${REL_INCREASE}"
+          (
+            printf "The image size before this change was: %.2e bytes.\n" "${BASE_SIZE}"
+            printf "The image size with this change is: %.2e bytes.\n" "${HEAD_SIZE}"
+            printf "Absolute change: %+.2e bytes.\n" "${ABS_INCREASE}"
+            printf "Relative change: %+.0f%%.\n" "${REL_INCREASE}"
+          ) > output
+
+          # Even though this is slightly ugly, it's the only way to set multiline
+          # environment variables that can be used in the next step:
+          # https://trstringer.com/github-actions-multiline-strings/
+          echo 'diff_report<<EOF' >> $GITHUB_ENV
+          cat output >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - name: Notify PR with results
+        uses: KeisukeYamashita/create-comment@v1
+        if: env.diff_report != ''
+        with:
+          check-only-first-line: true
+          unique: true
+          comment: |
+            <!-- schema-diff-gha-tag -->
+            ${{ env.diff_report }}
