@@ -47,7 +47,10 @@ jobs:
           SIDE: base
         working-directory: base/
         run: |
-          docker build -f Dockerfile . --tag "${SIDE}"
+          pwd
+          ls -l ..
+          ls -l -d .
+          docker build -f Dockerfile $PWD --tag "${SIDE}"
           dive "${SIDE}" --json analysis.json
           jq '.image.sizeBytes' analysis.json > "result.txt"
         
