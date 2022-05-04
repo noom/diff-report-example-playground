@@ -32,7 +32,8 @@ jobs:
         run: |
           BASE_COMMIT=${{ github.base_ref }}
           HEAD_COMMIT=${{ github.head_ref }}
-          git checkout $(git merge-base $BASE_COMMIT $HEAD_COMMIT)
+          MERGE_BASE=$(git merge-base $BASE_COMMIT $HEAD_COMMIT)
+          git checkout $MERGE_BASE
 
       - name: Checkout head
         uses: actions/checkout@v3
