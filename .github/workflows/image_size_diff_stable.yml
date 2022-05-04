@@ -30,11 +30,11 @@ jobs:
       - name: Checkout base, step 2
         working-directory: base/
         run: |
-          # Note that base_ref yields the following error:
+          # Note that using github.base_ref yields the following error:
           # fatal: Not a valid object name master
           # This is because the checkout action doesn't create local branches.
-          # BASE_COMMIT=${{ github.base_ref }}
-          # HEAD_COMMIT=${{ github.head_ref }}
+          # Because of that, we take the commit hashes from event.pull_request. The
+          # base.sha might be out of date, but for merge-base this is not a problem.
           BASE_COMMIT=${{ github.event.pull_request.base.sha }}
           HEAD_COMMIT=${{ github.event.pull_request.head.sha }}
           MERGE_BASE=$(git merge-base $BASE_COMMIT $HEAD_COMMIT)
