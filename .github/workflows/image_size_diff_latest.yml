@@ -1,6 +1,6 @@
 # Workflow for building and publishing data contracts in Python
 
-name: Docker Image Size diff "latest"
+name: Docker Image Size diff
 
 on: pull_request
 
