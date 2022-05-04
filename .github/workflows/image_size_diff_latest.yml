@@ -1,6 +1,6 @@
 # Workflow for building and publishing data contracts in Python
 
-name: Docker Image Size diff
+name: Docker Image Size diff latest
 
 on: pull_request
 
@@ -20,7 +20,7 @@ jobs:
         run: cat ${{ github.event_path }}
 
       - name: Checkout base
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.base_ref }}
           path: base/
@@ -74,7 +74,7 @@ jobs:
           REL_INCREASE=$(( 100.0 * ABS_INCREASE / BASE_SIZE ))
 
           (
-            printf "Diff results between %s and %s:\n\n" "${BASE_COMMIT}" "${HEAD_COMMIT}"
+            printf "Diff results between %s and %s (latest):\n\n" "${BASE_COMMIT}" "${HEAD_COMMIT}"
             printf "The image size before this change was: %.2e bytes.\n" "${BASE_SIZE}"
             printf "The image size with this change is: %.2e bytes.\n" "${HEAD_SIZE}"
             printf "Absolute change: %+.2e bytes.\n" "${ABS_INCREASE}"
@@ -95,5 +95,5 @@ jobs:
           check-only-first-line: true
           unique: true
           comment: |
-            <!-- schema-diff-gha-tag -->
+            <!-- diff-report-latest-gha-tag -->
             ${{ env.diff_report }}
