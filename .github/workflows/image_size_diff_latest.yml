@@ -78,7 +78,7 @@ jobs:
             printf "The image size before this change was: %.2e bytes.\n" "${BASE_SIZE}"
             printf "The image size with this change is: %.2e bytes.\n" "${HEAD_SIZE}"
             printf "Absolute change: %+.2e bytes.\n" "${ABS_INCREASE}"
-            printf "Relative change: %+.0f%%.\n" "${REL_INCREASE}"
+            printf "Relative change: %+.2f%%.\n" "${REL_INCREASE}"
           ) > output
 
           # Even though this is slightly ugly, it's the only way to set multiline
