@@ -47,7 +47,7 @@ jobs:
           SIDE: base
         working-directory: base/
         run: |
-          docker build . --tag "${SIDE}"
+          docker build -f Dockerfile . --tag "${SIDE}"
           dive "${SIDE}" --json analysis.json
           jq '.image.sizeBytes' analysis.json > "result.txt"
         
@@ -56,7 +56,7 @@ jobs:
           SIDE: head
         working-directory: head/
         run: |
-          docker build . --tag "${SIDE}"
+          docker build -f Dockerfile . --tag "${SIDE}"
           dive "${SIDE}" --json analysis.json
           jq '.image.sizeBytes' analysis.json > "result.txt"
 
