@@ -1,3 +1,3 @@
 # diff-report-example-playground
 
-An example implementation of a diff test using GitHub Actions.
+An example implementation of a diff report using GitHub Actions.
