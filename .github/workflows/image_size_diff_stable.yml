@@ -84,8 +84,8 @@ jobs:
           HEAD_COMMIT=$(cat head/commit.txt)
           BASE_SIZE=$(cat base/result.txt)
           HEAD_SIZE=$(cat head/result.txt)
-          ABS_INCREASE=$(( HEAD_SIZE - BASE_SIZE ))
-          REL_INCREASE=$(( 100.0 * ABS_INCREASE / BASE_SIZE ))
+          ABS_INCREASE=$(bc -l <<<"$HEAD_SIZE - $BASE_SIZE")
+          REL_INCREASE=$(bc -l <<<"100.0 * $ABS_INCREASE / $BASE_SIZE")
 
           (
             printf "Diff results between %s and %s (stable):\n\n" "${BASE_COMMIT}" "${HEAD_COMMIT}"
