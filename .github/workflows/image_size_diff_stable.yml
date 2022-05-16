@@ -30,6 +30,8 @@ jobs:
       - name: Checkout base, step 2
         working-directory: base/
         run: |
+          git branch --all
+          git show-ref
           # Note that using github.base_ref yields the following error:
           # fatal: Not a valid object name master
           # This is because the checkout action doesn't create local branches.
